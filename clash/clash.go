@@ -28,9 +28,17 @@ type ClashStartOptions struct {
 	// SocksListener Clash listener address and port
 	SocksListener string
 	// TrojanProxyServer Trojan proxy listening address and port
-	TrojanProxyServer string
+	ProxyServer        string
+	ProxyType          string
+	ProxyPassword      string
+	Proxycipher        string
+	Proxyobfs          string
+	Proxyobfsparam     string
+	Proxyorigin        string
+	Proxyprotocol      string
+	Proxyprotocolparam string
 	// TrojanProxyServerUdpEnabled Whether UDP is enabled for Trojan Server
-	TrojanProxyServerUdpEnabled bool
+	ProxyServerUdpEnabled bool
 }
 
 func Start(opt *ClashStartOptions) {
@@ -68,11 +76,18 @@ func Stop() {
 			log.Warnf("Clash Stop(): close conn err %v", err)
 		}
 	}
-
+	//obfs: plain, obfsparam: null, protocol: origin, protocolparam: null
 	opt := &ClashStartOptions{
-		SocksListener:               "127.0.0.1:0",
-		TrojanProxyServer:           "127.0.0.1:0",
-		TrojanProxyServerUdpEnabled: true,
+		SocksListener:         "127.0.0.1:0",
+		ProxyServer:           "127.0.0.1:0",
+		ProxyServerUdpEnabled: true,
+		ProxyPassword:         "",
+		Proxycipher:           "",
+		Proxyobfs:             "plain",
+		Proxyobfsparam:        "",
+		ProxyType:             "",
+		Proxyprotocol:         "origin",
+		Proxyprotocolparam:    "",
 	}
 	ApplyRawConfig(opt)
 
@@ -89,12 +104,12 @@ func ApplyRawConfig(opt *ClashStartOptions) {
 	if len(socksListenerHost) <= 0 {
 		log.Fatalf("SplitHostPort host is empty: %v", socksListenerHost)
 	}
-	trojanProxyServerHost, trojanProxyServerPort, err := net.SplitHostPort(opt.TrojanProxyServer)
+	ProxyServerHost, ProxyServerPort, err := net.SplitHostPort(opt.ProxyServer)
 	if err != nil {
-		log.Fatalf("SplitHostPort err: %v (%v)", err, opt.TrojanProxyServer)
+		log.Fatalf("SplitHostPort err: %v (%v)", err, opt.ProxyServer)
 	}
-	if len(trojanProxyServerHost) <= 0 {
-		log.Fatalf("SplitHostPort host is empty: %v", trojanProxyServerHost)
+	if len(ProxyServerHost) <= 0 {
+		log.Fatalf("SplitHostPort host is empty: %v", ProxyServerHost)
 	}
 
 	rawConfigBytes, err := readConfig(C.Path.Config())
@@ -119,11 +134,22 @@ func ApplyRawConfig(opt *ClashStartOptions) {
 	rawCfg.BindAddress = socksListenerHost //default is *
 	firstProxyServerMap := rawCfg.Proxy[0]
 	//proxies:
+	// - { name: ssr, type: ssr, server: 124.156.152.51, port: 10087, password: GN55YLnBct4FYcsT, cipher: aes-256-cfb, obfs: plain, obfsparam: null, protocol: origin, protocolparam: null, udp: 1 }
 	//  - { name: "trojan", type: socks5, server: "127.0.0.1", port: 1081, udp: true}
-	if firstProxyServerMap["type"] == "socks5" && firstProxyServerMap["name"] == "trojan" {
-		firstProxyServerMap["server"] = trojanProxyServerHost
-		firstProxyServerMap["port"] = trojanProxyServerPort
-		firstProxyServerMap["udp"] = opt.TrojanProxyServerUdpEnabled
+	if firstProxyServerMap["type"] == "ssr" && firstProxyServerMap["name"] == "ssr" {
+		firstProxyServerMap["server"] = ProxyServerHost
+		firstProxyServerMap["port"] = ProxyServerPort
+		firstProxyServerMap["password"] = opt.ProxyPassword
+		firstProxyServerMap["cipher"] = opt.Proxycipher
+		firstProxyServerMap["obfs"] = opt.Proxyobfs
+		firstProxyServerMap["obfsparam"] = opt.Proxyobfsparam
+		firstProxyServerMap["protocol"] = opt.Proxyprotocol
+		firstProxyServerMap["protocolparam"] = opt.Proxyprotocolparam
+		firstProxyServerMap["udp"] = opt.ProxyServerUdpEnabled
+	} else if firstProxyServerMap["type"] == "socks5" && firstProxyServerMap["name"] == "trojan" {
+		firstProxyServerMap["server"] = ProxyServerHost
+		firstProxyServerMap["port"] = ProxyServerPort
+		firstProxyServerMap["udp"] = opt.ProxyServerUdpEnabled
 	} else {
 		log.Fatalf("fail to find trojan proxy entry in Clash config")
 	}

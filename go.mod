@@ -1,4 +1,4 @@
-module github.com/trojan-gfw/igniter-go-libs
+module github.com/alroyso/igniter-go-libs
 
 go 1.15
 
@@ -16,4 +16,5 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e // indirect
+	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f // indirect
 )
